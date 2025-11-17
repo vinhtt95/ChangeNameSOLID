@@ -17,7 +17,6 @@ import javafx.scene.control.TreeItem;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
 public class MainViewModel {
@@ -36,23 +35,30 @@ public class MainViewModel {
         this.fileSystemService = new FileSystemServiceImpl();
     }
 
-    public StringProperty sourceFolderPathProperty() { return sourceFolderPath; }
-    public ObjectProperty<TreeItem<FileTreeItemViewModel>> leftTreeRootProperty() { return leftTreeRoot; }
-    public ObjectProperty<TreeItem<FileTreeItemViewModel>> rightTreeRootProperty() { return rightTreeRoot; }
+    public StringProperty sourceFolderPathProperty() {
+        return sourceFolderPath;
+    }
+
+    public ObjectProperty<TreeItem<FileTreeItemViewModel>> leftTreeRootProperty() {
+        return leftTreeRoot;
+    }
+
+    public ObjectProperty<TreeItem<FileTreeItemViewModel>> rightTreeRootProperty() {
+        return rightTreeRoot;
+    }
 
     /**
-     * Load folder và dựng 2 cây:
-     * - Left: Cấu trúc thực tế.
-     * - Right: Cấu trúc dự kiến sau khi move (phẳng hóa và tái cấu trúc).
+     * Loads the folder structure from the specified directory.
+     * Initializes both the source tree (left) and the preview tree (right).
+     *
+     * @param folder The root directory to load.
      */
     public void loadFolder(File folder) {
         sourceFolderPath.set(folder.getAbsolutePath());
 
-        // 1. Build Left Tree (Source Structure) & Collect all items
         TreeItem<FileTreeItemViewModel> leftRoot = createSourceTreeItem(folder);
         leftTreeRoot.set(leftRoot);
 
-        // 2. Calculate Paths & Build Right Tree (Preview Structure)
         List<FileItem> allItems = collectAllItems(leftRoot);
         applyRenamingStrategy(allItems);
 
@@ -60,7 +66,6 @@ public class MainViewModel {
         rightTreeRoot.set(rightRoot);
     }
 
-    // --- Helper build Left Tree ---
     private TreeItem<FileTreeItemViewModel> createSourceTreeItem(File file) {
         FileItem itemModel = new FileItem(file);
         FileTreeItemViewModel itemViewModel = new FileTreeItemViewModel(itemModel);
@@ -78,7 +83,6 @@ public class MainViewModel {
         return treeItem;
     }
 
-    // --- Logic: Apply Strategy ---
     private void applyRenamingStrategy(List<FileItem> items) {
         for (FileItem item : items) {
             if (!item.isDirectory()) {
@@ -88,24 +92,19 @@ public class MainViewModel {
         }
     }
 
-    // --- Logic: Build Preview Tree from Destination Paths ---
     private TreeItem<FileTreeItemViewModel> buildPreviewTree(File rootFolder, List<FileItem> items) {
-        // Root node cho cây Preview
         FileItem rootItem = new FileItem(rootFolder);
         TreeItem<FileTreeItemViewModel> rootTreeItem = new TreeItem<>(new FileTreeItemViewModel(rootItem));
         rootTreeItem.setExpanded(true);
 
-        // Cache để tái sử dụng các node folder cha trong quá trình dựng cây
         Map<String, TreeItem<FileTreeItemViewModel>> folderNodes = new HashMap<>();
         folderNodes.put(rootFolder.getAbsolutePath(), rootTreeItem);
 
         for (FileItem item : items) {
-            if (item.isDirectory()) continue; // Bỏ qua folder nguồn, ta sẽ tự tạo folder đích nếu cần
+            if (item.isDirectory()) continue;
 
-            // Xác định path hiển thị: Nếu có dest thì dùng dest, không thì dùng source
             Path effectivePath = item.getDestinationPath() != null ? item.getDestinationPath() : item.getSourceFile().toPath();
 
-            // Tìm hoặc tạo các node folder cha trên cây Preview
             TreeItem<FileTreeItemViewModel> parentNode = getOrCreateParentNode(rootFolder, effectivePath.getParent(), folderNodes);
 
             if (parentNode != null) {
@@ -119,24 +118,19 @@ public class MainViewModel {
     private TreeItem<FileTreeItemViewModel> getOrCreateParentNode(File rootFolder, Path targetParentPath, Map<String, TreeItem<FileTreeItemViewModel>> cache) {
         String pathStr = targetParentPath.toAbsolutePath().toString();
 
-        // Base case: Nếu path khớp với cache (bao gồm cả root)
         if (cache.containsKey(pathStr)) {
             return cache.get(pathStr);
         }
 
-        // Security check: Không hiển thị folder nằm ngoài root đã chọn
         if (!pathStr.startsWith(rootFolder.getAbsolutePath())) {
             return null;
         }
 
-        // Recursive: Tìm node ông nội
         TreeItem<FileTreeItemViewModel> grandParentNode = getOrCreateParentNode(rootFolder, targetParentPath.getParent(), cache);
 
         if (grandParentNode != null) {
-            // Tạo node cha mới (Folder ảo trên cây Preview)
             File folderFile = targetParentPath.toFile();
             FileItem folderItem = new FileItem(folderFile);
-            // Lưu ý: Folder ảo này chưa có status move, nó chỉ đại diện cấu trúc
 
             TreeItem<FileTreeItemViewModel> folderNode = new TreeItem<>(new FileTreeItemViewModel(folderItem));
             folderNode.setExpanded(true);
@@ -149,7 +143,6 @@ public class MainViewModel {
         return null;
     }
 
-    // --- Các hàm Utilities ---
     private List<FileItem> collectAllItems(TreeItem<FileTreeItemViewModel> root) {
         List<FileItem> list = new ArrayList<>();
         if (root == null) return list;
@@ -161,7 +154,13 @@ public class MainViewModel {
         return list;
     }
 
-    // --- Giữ nguyên logic Command ---
+    /**
+     * Manually updates the destination name of a specific file item.
+     * Preserves the original file extension.
+     *
+     * @param treeItem The tree item containing the file to rename.
+     * @param newNameWithoutExt The new filename entered by the user (without extension).
+     */
     public void manualRename(TreeItem<FileTreeItemViewModel> treeItem, String newNameWithoutExt) {
         FileItem item = treeItem.getValue().getModel();
         if (item.isDirectory()) return;
@@ -179,30 +178,57 @@ public class MainViewModel {
 
         if (parentPath != null) {
             item.setDestinationPath(parentPath.resolve(newFullName));
-            // Refresh UI
             FileTreeItemViewModel currentViewModel = treeItem.getValue();
             treeItem.setValue(null);
             treeItem.setValue(currentViewModel);
         }
     }
 
-    public void runSingleItem(TreeItem<FileTreeItemViewModel> treeItem) {
-        FileItem item = treeItem.getValue().getModel();
-        if (item != null && !item.isDirectory() && item.getDestinationPath() != null) {
+    /**
+     * Executes the move operation for a single selected item.
+     * Updates both trees: marks as DONE in preview tree, removes from source tree.
+     *
+     * @param rightTreeItem The tree item from the preview tree to process.
+     */
+    public void runSingleItem(TreeItem<FileTreeItemViewModel> rightTreeItem) {
+        FileItem item = rightTreeItem.getValue().getModel();
+
+        if (item != null && !item.isDirectory() && item.getDestinationPath() != null && item.getStatus() != FileStatus.DONE) {
             boolean success = fileSystemService.moveFile(item);
+
             if (success) {
-                if (treeItem.getParent() != null) {
-                    treeItem.getParent().getChildren().remove(treeItem);
+                FileTreeItemViewModel vm = rightTreeItem.getValue();
+                rightTreeItem.setValue(null);
+                rightTreeItem.setValue(vm);
+
+                if (leftTreeRoot.get() != null) {
+                    removeItemFromTree(leftTreeRoot.get(), item);
                 }
             }
         }
+    }
+
+    private boolean removeItemFromTree(TreeItem<FileTreeItemViewModel> root, FileItem itemToRemove) {
+        Iterator<TreeItem<FileTreeItemViewModel>> iterator = root.getChildren().iterator();
+        while (iterator.hasNext()) {
+            TreeItem<FileTreeItemViewModel> child = iterator.next();
+
+            if (child.getValue() != null && child.getValue().getModel() == itemToRemove) {
+                iterator.remove();
+                return true;
+            }
+
+            if (removeItemFromTree(child, itemToRemove)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
      * Generates a physical preview of the file structure (Dry Run).
      */
     public void executeDryRun() {
-        // Lấy root folder hiện tại từ đường dẫn đã nhập
         String pathStr = sourceFolderPath.get();
         if (pathStr == null || pathStr.isEmpty()) return;
 
@@ -211,10 +237,13 @@ public class MainViewModel {
 
         List<FileItem> allItems = collectAllItems(rightTreeRoot.get());
 
-        // Truyền thêm rootFolder vào service
         dryRunService.executeDryRun(allItems, rootFolder);
     }
 
+    /**
+     * Executes the move operation for all items in the preview tree.
+     * Reloads the folder structure upon completion.
+     */
     public void executeRunAll() {
         List<FileItem> allItems = collectAllItems(rightTreeRoot.get());
         for (FileItem item : allItems) {

@@ -1,12 +1,11 @@
 package com.vinhtt.changeName.view.components;
 
-import com.vinhtt.changeName.model.FileItem;
-import com.vinhtt.changeName.viewmodel.FileTreeItemViewModel; // Import ViewModel
+import com.vinhtt.changeName.model.FileStatus;
+import com.vinhtt.changeName.viewmodel.FileTreeItemViewModel;
 import com.vinhtt.changeName.viewmodel.MainViewModel;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 
-// Sửa Generic Type từ <FileItem> thành <FileTreeItemViewModel>
 public class PreviewTreeCell extends TreeCell<FileTreeItemViewModel> {
 
     private TextField textField;
@@ -21,7 +20,6 @@ public class PreviewTreeCell extends TreeCell<FileTreeItemViewModel> {
     private void createContextMenu() {
         MenuItem runItem = new MenuItem("Run This File");
         runItem.setOnAction(e -> {
-            // getTreeItem() bây giờ trả về TreeItem<FileTreeItemViewModel>, khớp với MainViewModel
             if (getTreeItem() != null) viewModel.runSingleItem(getTreeItem());
         });
 
@@ -33,7 +31,7 @@ public class PreviewTreeCell extends TreeCell<FileTreeItemViewModel> {
 
     @Override
     public void startEdit() {
-        if (getItem() == null || getItem().isDirectory()) return;
+        if (getItem() == null || getItem().isDirectory() || getItem().getModel().getStatus() == FileStatus.DONE) return;
         super.startEdit();
 
         if (textField == null) {
@@ -47,7 +45,7 @@ public class PreviewTreeCell extends TreeCell<FileTreeItemViewModel> {
     @Override
     public void cancelEdit() {
         super.cancelEdit();
-        setText(getItem().toString()); // Sử dụng toString() của ViewModel
+        setText(getItem().toString());
         setGraphic(getTreeItem().getGraphic());
     }
 
@@ -59,6 +57,7 @@ public class PreviewTreeCell extends TreeCell<FileTreeItemViewModel> {
             setText(null);
             setGraphic(null);
             setContextMenu(null);
+            setStyle("");
         } else {
             if (isEditing()) {
                 if (textField != null) {
@@ -70,19 +69,24 @@ public class PreviewTreeCell extends TreeCell<FileTreeItemViewModel> {
                 setText(getString());
                 setGraphic(getTreeItem().getGraphic());
 
-                // Truy cập Model thông qua ViewModel để check logic hiển thị màu sắc
-                if (item.getModel().getDestinationPath() != null) {
-                    setStyle("-fx-text-fill: blue; -fx-font-weight: bold;");
+                if (item.getModel().getStatus() == FileStatus.DONE) {
+                    setStyle("-fx-text-fill: #2ecc71; -fx-font-weight: bold;");
+                } else if (item.getModel().getDestinationPath() != null) {
+                    setStyle("-fx-text-fill: -color-accent-fg; -fx-font-weight: bold;");
                 } else {
                     setStyle("");
                 }
             }
-            setContextMenu(contextMenu);
+
+            if (item.getModel().getStatus() != FileStatus.DONE) {
+                setContextMenu(contextMenu);
+            } else {
+                setContextMenu(null);
+            }
         }
     }
 
     private void createTextField() {
-        // Lấy tên file hiện tại (đã xử lý logic trong ViewModel)
         textField = new TextField(getStringWithoutExtension());
         textField.setOnKeyReleased(t -> {
             if (t.getCode() == KeyCode.ENTER) {
