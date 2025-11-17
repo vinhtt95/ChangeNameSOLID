@@ -1,0 +1,26 @@
+/* Global styles */
+.root {
+    /* Cỡ chữ to hơn theo yêu cầu */
+    -fx-font-size: 16px;
+    /* Font chữ hệ thống macOS */
+    -fx-font-family: "San Francisco", "Helvetica Neue", "Arial";
+}
+
+/* Tinh chỉnh TreeView cho hiện đại hơn */
+.tree-view {
+    -fx-background-color: transparent;
+}
+
+.tree-cell {
+    -fx-padding: 5px 0 5px 5px; /* Tăng khoảng cách các dòng */
+}
+
+/* Button style hiện đại */
+.button {
+    -fx-cursor: hand;
+}
+
+/* SplitPane divider trong suốt/tinh tế hơn */
+.split-pane > .split-pane-divider {
+    -fx-background-color: -color-border-muted;
+}

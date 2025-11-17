@@ -10,31 +10,32 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.vinhtt.changeName.view.MainController" prefHeight="600.0" prefWidth="800.0">
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.vinhtt.changeName.view.MainController" prefHeight="700.0" prefWidth="1000.0">
+
     <top>
-        <HBox spacing="10" style="-fx-background-color: #f0f0f0;">
-            <padding>
-                <Insets top="10" right="10" bottom="10" left="10"/>
-            </padding>
-            <TextField fx:id="txtPath" HBox.hgrow="ALWAYS" promptText="Select Folder..." editable="false"/>
-            <Button text="Browse" onAction="#onBrowse"/>
+        <HBox spacing="15" style="-fx-padding: 15; -fx-background-color: -color-bg-default; -fx-border-color: transparent transparent -color-border-muted transparent;">
+            <TextField fx:id="txtPath" HBox.hgrow="ALWAYS" promptText="Select Folder to Organize..." editable="false" style="-fx-pref-height: 36;"/>
+            <Button text="Browse Folder" onAction="#onBrowse" styleClass="accent" style="-fx-pref-height: 36;"/>
         </HBox>
     </top>
+
     <center>
-        <SplitPane dividerPositions="0.5">
-            <VBox spacing="5">
-                <padding><Insets top="5" right="5" bottom="5" left="5"/></padding>
-                <Label text="Current Structure" style="-fx-font-weight: bold;"/>
-                <TreeView fx:id="leftTree" VBox.vgrow="ALWAYS"/>
+        <SplitPane dividerPositions="0.45" style="-fx-background-color: -color-bg-default;">
+            <VBox spacing="10" style="-fx-background-color: -color-bg-default;">
+                <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+                <Label text="Current Structure" style="-fx-font-weight: bold; -fx-text-fill: -color-fg-default;"/>
+                <TreeView fx:id="leftTree" VBox.vgrow="ALWAYS" style="-fx-background-color: transparent; -fx-border-color: -color-border-muted; -fx-border-radius: 4;"/>
             </VBox>
 
-            <VBox spacing="5">
-                <padding><Insets top="5" right="5" bottom="5" left="5"/></padding>
-                <Label text="Preview (After Sort)" style="-fx-font-weight: bold; -fx-text-fill: #2e86de;"/>
-                <TreeView fx:id="rightTree" VBox.vgrow="ALWAYS"/>
-                <HBox spacing="10" alignment="CENTER_RIGHT">
-                    <Button text="Preview (Finder)" onAction="#onDryRunPreview"/>
-                    <Button text="Run All" onAction="#onRunAll" style="-fx-background-color: #e74c3c; -fx-text-fill: white;"/>
+            <VBox spacing="10" style="-fx-background-color: -color-bg-default;">
+                <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+                <Label text="Preview Structure (Dry Run)" style="-fx-font-weight: bold; -fx-text-fill: -color-accent-fg;"/>
+
+                <TreeView fx:id="rightTree" VBox.vgrow="ALWAYS" style="-fx-background-color: transparent; -fx-border-color: -color-border-muted; -fx-border-radius: 4;"/>
+
+                <HBox spacing="15" alignment="CENTER_RIGHT" style="-fx-padding: 10 0 0 0;">
+                    <Button text="Open Finder Preview" onAction="#onDryRunPreview" style="-fx-pref-height: 32;"/>
+                    <Button text="Run All Changes" onAction="#onRunAll" styleClass="danger" style="-fx-pref-height: 32;"/>
                 </HBox>
             </VBox>
         </SplitPane>
