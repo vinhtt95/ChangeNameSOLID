@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TreeView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.vinhtt.changeName.view.MainController" prefHeight="600.0" prefWidth="800.0">
+    <top>
+        <HBox spacing="10" style="-fx-background-color: #f0f0f0;">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+            <TextField fx:id="txtPath" HBox.hgrow="ALWAYS" promptText="Select Folder..." editable="false"/>
+            <Button text="Browse" onAction="#onBrowse"/>
+        </HBox>
+    </top>
+    <center>
+        <SplitPane dividerPositions="0.5">
+            <VBox spacing="5">
+                <padding><Insets top="5" right="5" bottom="5" left="5"/></padding>
+                <Label text="Current Structure" style="-fx-font-weight: bold;"/>
+                <TreeView fx:id="leftTree" VBox.vgrow="ALWAYS"/>
+            </VBox>
+
+            <VBox spacing="5">
+                <padding><Insets top="5" right="5" bottom="5" left="5"/></padding>
+                <Label text="Preview (After Sort)" style="-fx-font-weight: bold; -fx-text-fill: #2e86de;"/>
+                <TreeView fx:id="rightTree" VBox.vgrow="ALWAYS"/>
+                <HBox spacing="10" alignment="CENTER_RIGHT">
+                    <Button text="Preview (Finder)" onAction="#onDryRunPreview"/>
+                    <Button text="Run All" onAction="#onRunAll" style="-fx-background-color: #e74c3c; -fx-text-fill: white;"/>
+                </HBox>
+            </VBox>
+        </SplitPane>
+    </center>
+</BorderPane>
